@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Judgemint of the Realm Lords</title>
+<link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&family=Alegreya+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e3ede7;--panel:#f5faf7;--ink:#17302b;--mute:#587770;--mint:#237f60;--line:#b6cdc3;--doom:#bf3f2b;--gold:#8f6c10;--town:#cfe8dc;--lair:#f0d2ca;--hero:#17302b;--herotxt:#f5faf7;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1a18;--panel:#162826;--ink:#dcebe5;--mute:#8aaca2;--mint:#6fd6ae;--line:#2b4540;--doom:#ee7a63;--gold:#e0b84a;--town:#1d3c35;--lair:#3f2420;--hero:#6fd6ae;--herotxt:#0e1a18}}
+:root[data-theme="dark"]{--bg:#0e1a18;--panel:#162826;--ink:#dcebe5;--mute:#8aaca2;--mint:#6fd6ae;--line:#2b4540;--doom:#ee7a63;--gold:#e0b84a;--town:#1d3c35;--lair:#3f2420;--hero:#6fd6ae;--herotxt:#0e1a18}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 "Alegreya Sans",system-ui,sans-serif}
+main{max-width:480px;margin:0 auto;padding:14px}
+h1{font:700 26px/1.1 Almendra,Georgia,serif;margin:4px 0 10px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px}
+.stats{display:flex;flex-wrap:wrap;gap:4px 14px}
+.stats b{font-weight:700}
+.doom{height:8px;background:var(--line);border-radius:4px;margin-top:8px;overflow:hidden}
+.doom i{display:block;height:100%;background:var(--doom)}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.cell{aspect-ratio:1;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--mute);font:inherit;font-size:15px;padding:0;display:grid;place-items:center}
+.cell.town{background:var(--town);color:var(--mint);font-size:20px}
+.cell.lair{background:var(--lair);color:var(--doom);font-size:20px}
+.cell.near{border-color:var(--mint);border-width:2px;color:var(--ink)}
+.cell.hero{background:var(--hero);color:var(--herotxt);font-weight:700}
+button{font:inherit;cursor:pointer}
+.btn{background:var(--mint);color:var(--herotxt);border:0;border-radius:8px;padding:9px 12px;font-weight:700}
+.btn.alt{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.4;cursor:default}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.row .btn{flex:1 1 90px}
+h2{font:700 19px Almendra,Georgia,serif;margin:0 0 4px}
+.hp{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin:3px 0 6px}
+.hp i{display:block;height:100%;background:var(--mint)}
+.hp.e i{background:var(--doom)}
+.log{margin:0;padding:0;list-style:none;color:var(--mute);font-size:15px}
+.log li:first-child{color:var(--ink)}
+small{color:var(--mute)}
+.hand{display:flex;gap:4px;margin:6px 0 2px}
+.chip{flex:1;text-align:center;border:1px solid var(--line);border-radius:6px;padding:4px 0;font-size:14px;font-weight:700}
+.chip{display:flex;justify-content:center}
+.chip.used{opacity:.3}
+.ic{display:block}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px}
+.ics{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
+.ics span{display:inline-flex;gap:4px;align-items:center}
+.btn.tn{flex-direction:column;gap:1px}
+.tr{display:flex;gap:6px;align-items:center;white-space:nowrap}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+</style>
+</head>
+<body>
+<main>
+<h1>Judgemint of the Realm Lords</h1>
+<div id="app"></div>
+<p><small>Unofficial solo prototype inspired by the mint-tin card game. Rules simplified.</small></p>
+</main>
+<script>
+const $=s=>document.querySelector(s),d6=()=>1+Math.floor(Math.random()*6),rnd=n=>Math.floor(Math.random()*n);
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const MV=['Sword','Axe','Spear'],BEATS=[1,2,0];
+const ICP=['<path d="M20 4L9 15M6.5 12.5l5 5M9 15l-5 5"/>','<g transform="rotate(40 12 12)"><path d="M12 10v12"/><path d="M12 7C14.5 7 16 5.5 18 3.5C22 6 22 12 18 14.5C16 12.5 14.5 11 12 11zM12 7C9.5 7 8 5.5 6 3.5C2 6 2 12 6 14.5C8 12.5 9.5 11 12 11z" fill="currentColor" stroke-width="1.5"/></g>','<path d="M4 20L16 8"/><path d="M21 3l-7.5 3.5 4 4z" fill="currentColor"/>'];
+const tri=()=>{const P=[[90,18],[150,88],[30,88]];return `<svg viewBox="0 0 180 112" width="170" role="img" aria-label="Sword beats axe, axe beats spear, spear beats sword" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><defs><marker id="ah" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M1 1L7 4L1 7z" fill="currentColor" stroke="none"/></marker></defs><line x1="102" y1="32" x2="138" y2="74" marker-end="url(#ah)"/><line x1="132" y1="88" x2="48" y2="88" marker-end="url(#ah)"/><line x1="42" y1="74" x2="78" y2="32" marker-end="url(#ah)"/>${P.map((p,i)=>`<g transform="translate(${p[0]-12} ${p[1]-12})">${ICP[i]}</g>`).join('')}</svg>`};
+const ico=i=>`<svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICP[i]}</svg>`;
+const ITEMS=[['Iron Sword',4,'b0','+1 Sword damage'],['Hand Axe',4,'b1','+1 Axe damage'],['Ash Spear',4,'b2','+1 Spear damage'],['War Charm',7,'all','+1 damage, any move'],['Chain Mail',5,'hp','+2 max HP'],['Healing Draught',3,'heal','Heal to full']];
+const NAMES=[['Bog Imp','Rat Swarm','Hollow Bandit','Gloom Sprite','Mire Hound','Thorn Wisp'],['Ash Wolf','Bone Knight','Marsh Hag','Rust Golem','Night Crow','Grave Digger'],['Wyrm','Void Priest','Iron Revenant','Basilisk','Cinder Giant','Blight Drake']];
+const TIER=[{hp:4,atk:1,gold:2,exp:1},{hp:7,atk:2,gold:4,exp:3},{hp:10,atk:3,gold:6,exp:4}];
+const LORDS=[['Lord of Storms',14,4,12],['Lord of Famine',15,4,12],['Lord of Law',16,5,12],['the Death Lord',18,5,20]];
+let G,LOG=[];
+const lvl=()=>G.s[0]+G.s[1]+G.s[2]-3,maxHp=()=>8+2*lvl()+G.hpb;
+const say=t=>{LOG.unshift(t);LOG=LOG.slice(0,7)};
+function newGame(){
+  const map=[];
+  for(let r=0;r<6;r++){map.push([]);for(let c=0;c<6;c++)map[r].push({t:'wild',tier:r>=4?0:r>=2?1:2})}
+  for(let r=0;r<6;r++){const c=r==5?0:rnd(6);map[r][c]={t:'town',tier:map[r][c].tier,stock:shuffle(ITEMS.slice()).slice(0,3)}}
+  const free=[];for(let r=0;r<3;r++)for(let c=0;c<6;c++)if(map[r][c].t=='wild')free.push([r,c]);
+  shuffle(free);
+  for(let i=0;i<4;i++){const[r,c]=free[i];map[r][c]={t:'lair',tier:2,lord:i}}
+  G={map,r:5,c:0,pr:5,pc:0,hp:8,s:[1,1,1],b:[0,0,0],ball:0,hpb:0,gold:3,exp:0,doom:30,beaten:[],end:null,f:null};
+  LOG=[];say('You set out from the southern town. Defeat 3 Realm Lords, or the Death Lord, before the doom clock runs out.');
+  render();
+}
+function tick(){
+  if(d6()<=2){G.doom--;say('The doom clock ticks down.')}
+  if(G.doom<=0){G.doom=0;G.end='lost';say('The realm falls into chaos.')}
+}
+function newHand(){const o=shuffle([0,1,2]);return [o[0],o[0],o[0],o[1],o[1],o[2]].map(t=>({t,used:false}))}
+function fight(k,name,hp,atk,gold,exp,lord){
+  if(!k.e)k.e={n:name,hp,max:hp,atk,gold,exp,lord,hand:newHand()};
+  G.f=k.e;G.k=k;
+  say(`${name} blocks your path.`);
+}
+function move(r,c){
+  G.pr=G.r;G.pc=G.c;G.r=r;G.c=c;tick();if(G.end)return;
+  const k=G.map[r][c];
+  if(k.t=='town')say('You reach a town. You can trade and rest here.');
+  else if(k.t=='lair'){
+    if(G.beaten.includes(k.lord))say('The lair is empty.');
+    else{const L=LORDS[k.lord];fight(k,L[0].replace(/^the /,''),L[1],L[2],L[3],8,k.lord)}
+  }else if(k.cleared)say('Nothing is left here. This spot is cleared.');
+  else{const T=TIER[k.tier];fight(k,NAMES[k.tier][rnd(6)],T.hp+rnd(2),T.atk,T.gold,T.exp,null)}
+}
+function play(m){
+  const f=G.f;
+  const open=f.hand.filter(x=>!x.used),pick=open[rnd(open.length)];pick.used=true;const em=pick.t;
+  let t=`You attack with the ${MV[m].toLowerCase()}, it uses the ${MV[em].toLowerCase()}. `;
+  if(m==em)t+='Clash, no damage.';
+  else if(BEATS[m]==em){
+    const dmg=G.s[m]+G.b[m]+G.ball+(d6()>=5?1:0);f.hp-=dmg;t+=`You deal ${dmg}.`;
+  }else{
+    const dmg=f.atk+(d6()>=5?1:0);G.hp-=dmg;t+=`You take ${dmg}.`;
+  }
+  say(t);
+  if(f.hand.every(x=>x.used)){f.hand.forEach(x=>x.used=false);say('All six enemy attacks are available again.')}
+  if(f.hp<=0){
+    G.gold+=f.gold;G.exp+=f.exp;say(`${f.n} falls. +${f.gold} gold, +${f.exp} exp.`);
+    if(f.lord!==null){G.beaten.push(f.lord);if(f.lord==3||[0,1,2].every(i=>G.beaten.includes(i))){G.end='won'}}
+    G.k.cleared=true;G.k.e=null;G.f=null;
+  }else if(G.hp<=0){
+    G.gold>>=1;G.hp=maxHp();G.r=5;G.c=0;G.f=null;G.doom-=3;
+    say('You are beaten and carried back to the southern town. Half your gold is gone and the doom clock drops by 3.');
+    if(G.doom<=0){G.doom=0;G.end='lost'}
+  }
+}
+function flee(){G.doom-=2;G.r=G.pr;G.c=G.pc;say(`You flee from ${G.f.n}. The doom clock drops by 2.`);G.f=null;if(G.doom<=0){G.doom=0;G.end='lost'}}
+function rest(){
+  const town=G.map[G.r][G.c].t=='town';
+  G.hp=Math.min(maxHp(),G.hp+(town?99:3));say(town?'You rest at the inn and recover fully.':'You rest and recover 3 HP.');tick();
+}
+function buy(i){
+  const k=G.map[G.r][G.c],it=k.stock[i];if(G.gold<it[1])return;
+  G.gold-=it[1];const x=it[2];
+  if(x[0]=='b'&&x!='ball')G.b[+x[1]]++;else if(x=='all')G.ball++;else if(x=='hp'){G.hpb+=2;G.hp+=2}else if(x=='heal')G.hp=maxHp();
+  k.stock.splice(i,1);say(`Bought ${it[0]}.`);
+}
+function train(k){
+  const cost=2*G.s[k];if(G.exp<cost)return;
+  G.exp-=cost;G.s[k]++;G.hp+=2;say(`${MV[k]} rises to ${G.s[k]}. You are now level ${lvl()}.`);
+}
+function bless(){
+  if(G.gold<15)return;
+  G.gold-=15;G.s=G.s.map(x=>x+1);G.hp+=6;say(`A blessing raises all three weapon skills. You are now level ${lvl()}.`);
+}
+function render(){
+  const k=G.map[G.r][G.c],near=(r,c)=>!G.f&&!G.end&&Math.abs(r-G.r)+Math.abs(c-G.c)==1;
+  let S=`<div class="box"><div class="stats"><span>HP <b>${G.hp}/${maxHp()}</b></span><span>Level <b>${lvl()}</b></span><span>Gold <b>${G.gold}</b></span><span>Exp <b>${G.exp}</b></span><span>Lords <b>${G.beaten.filter(i=>i<3).length}/3</b></span></div>
+  <small class="ics">${[0,1,2].map(i=>`<span aria-label="${MV[i]}">${ico(i)} ${G.s[i]+G.b[i]+G.ball}</span>`).join('')}</small>
+  <div class="doom" role="img" aria-label="Doom clock ${G.doom} of 30"><i style="width:${G.doom/30*100}%"></i></div><small>Doom clock: ${G.doom} left</small></div>`;
+  let h='<div class="box"><div class="grid">';
+  for(let r=0;r<6;r++)for(let c=0;c<6;c++){
+    const x=G.map[r][c],here=r==G.r&&c==G.c;
+    const g=here?'You':x.t=='town'?'⌂':x.t=='lair'&&!G.beaten.includes(x.lord)?'♛':x.t=='lair'||x.cleared?'✓':'•'.repeat(x.tier+1);
+    h+=`<button class="cell ${x.t} ${near(r,c)?'near':''} ${here?'hero':''}" ${near(r,c)?`data-a="go" data-r="${r}" data-c="${c}"`:'disabled'} aria-label="${x.t} row ${r+1} column ${c+1}">${g}</button>`;
+  }
+  h+='</div><small>⌂ town · ♛ lair · ✓ cleared · dots show enemy tier</small></div>'+S;
+  if(G.end){
+    h+=`<div class="box"><h2>${G.end=='won'?'The realm is saved':'The realm has fallen'}</h2><p>${G.end=='won'?'You have judged the Realm Lords.':'The doom clock reached zero.'}</p><div class="row"><button class="btn" data-a="new">New game</button></div></div>`;
+  }else if(G.f){
+    const f=G.f;
+    h+=`<div class="box"><h2>${f.n}</h2><div class="hp e"><i style="width:${Math.max(0,f.hp/f.max*100)}%"></i></div><small>HP ${Math.max(0,f.hp)}/${f.max} · Attack ${f.atk}</small><div class="hand">${f.hand.map(x=>`<span class="chip ${x.used?'used':''}" role="img" aria-label="${MV[x.t]}">${ico(x.t)}</span>`).join('')}</div><small>Its six attacks. Dimmed ones are spent. All six return once every one has been used.</small>
+    <div class="row">${MV.map((m,i)=>`<button class="btn" data-a="play" data-m="${i}" aria-label="${m}">${ico(i)}</button>`).join('')}</div>
+    <div class="row"><button class="btn alt" data-a="flee">Flee (doom −2)</button></div><div style="display:flex;justify-content:center;margin-top:6px">${tri()}</div></div>`;
+  }else{
+    h+=`<div class="box"><div class="row" style="margin-top:0"><button class="btn alt" data-a="rest">${k.t=='town'?'Rest at inn (full HP)':'Rest (+3 HP)'}</button></div></div>`;
+    if(k.t=='town')h+=`<div class="box"><h2>Town shop</h2>${k.stock.length?k.stock.map((it,i)=>`<div class="row" style="align-items:center;margin-top:4px"><span style="flex:1 1 150px">${it[0]}<br><small>${it[3]}</small></span><button class="btn alt" style="flex:0 0 auto" data-a="buy" data-i="${i}" ${G.gold<it[1]?'disabled':''}>${it[1]} gold</button></div>`).join(''):`<small>Sold out.</small><div class="row"><button class="btn alt" data-a="bless" ${G.gold<15?'disabled':''}>Blessing: +1 to all three weapons (15 gold)</button></div>`}</div>`;
+    h+=`<div class="box"><h2>Train</h2><small>Spend exp to raise a stat.</small><div class="row">${MV.map((m,i)=>`<button class="btn alt tn" data-a="train" data-k="${i}" ${G.exp<2*G.s[i]?'disabled':''} aria-label="Train ${m}"><span class="tr">${ico(i)} ${G.s[i]}→${G.s[i]+1}</span><small>${2*G.s[i]} exp</small></button>`).join('')}</div></div>`;
+  }
+  h+=`<ul class="log box">${LOG.map(l=>`<li>${l}</li>`).join('')}</ul>`;
+  $('#app').innerHTML=h;
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
+  const a=b.dataset.a;
+  if(a=='new')return newGame();
+  if(G.end)return;
+  if(a=='go')move(+b.dataset.r,+b.dataset.c);
+  else if(a=='play')play(+b.dataset.m);
+  else if(a=='flee')flee();
+  else if(a=='rest')rest();
+  else if(a=='buy')buy(+b.dataset.i);
+  else if(a=='train')train(+b.dataset.k);
+  else if(a=='bless')bless();
+  render();
+});
+newGame();
+</script>
+</body>
+</html>
